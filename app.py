@@ -18,6 +18,8 @@ import secrets
 import hashlib
 import csv
 import io
+from dotenv import load_dotenv
+load_dotenv()
 
 
 app = Flask(__name__)
@@ -35,15 +37,14 @@ app.config['CHECKER_FOLDER'] = os.path.join('static','resumes','checker')
 os.makedirs(app.config['CHECKER_FOLDER'], exist_ok=True)
 
 client = OpenAI(
-    api_key="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",
+    api_key=os.environ.get("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
 )
 
 # API_KEY = "2b945c2c7emsha9f21d8f257cfabp141d62jsnffe0f473ee24"
 
-ADZUNA_APP_ID  = "eaacffc9"   # from developer.adzuna.com
-ADZUNA_APP_KEY = "98ad6f7eaa388958e0bc0351672da129"
-
+ADZUNA_APP_ID  = os.environ.get("ADZUNA_APP_ID")
+ADZUNA_APP_KEY = os.environ.get("ADZUNA_APP_KEY")
 def get_connection():
     return mysql.connector.connect(
         host="jobportal-db.cv66ssaw4nnq.eu-north-1.rds.amazonaws.com",
