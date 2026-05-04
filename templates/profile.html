@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+</head>
+
+<body>
+    <div class="up">
+        <ul>
+            <li><a href="{{url_for('main')}}">Home</a></li>
+            <li><a href="{{url_for('about')}}">About</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{current_user.Full_Name}}</h4>
+                    <p>{{current_user.Email}}</p>
+                </div>
+
+                <div class="card-links">
+                    <a href="{{ url_for('profile') }}">My Profile</a>
+                    <a href="{{ url_for('logout') }}">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="upload-container">
+
+        <div class="large-profile-wrapper">
+            <img src="{% if user.profile_image %}
+                {{ url_for('static', filename='profile_pics/' + user.profile_image) }}
+             {% else %}
+                {{ url_for('static', filename='images/profile.jpeg') }}
+             {% endif %}" class="large-profile-img" id="preview">
+        </div>
+
+        <form method="POST" action="{{ url_for('upload_profile') }}" enctype="multipart/form-data">
+
+            <label for="fileInput" class="file-label">Choose Image</label>
+            <input type="file" name="profile_image" id="fileInput" accept="image/*">
+
+            <button type="submit" class="upload-btn">
+                Upload
+            </button>
+
+        </form>
+    </div> -->
+    <div class="profile-page">
+
+        <div class="profile-card-main">
+
+            <div class="profile-left">
+                <div class="large-profile-wrapper">
+                    <img src="{% if user.profile_image %}
+        {{ url_for('static', filename='profile_pics/' + user.profile_image) }}
+     {% else %}
+        {{ url_for('static', filename='images/profile.jpeg') }}
+     {% endif %}" class="large-profile-img" id="preview">
+                </div>
+
+                <form method="POST" action="{{ url_for('upload_profile') }}" enctype="multipart/form-data"
+                    class="upload-form">
+
+                    <label for="fileInput" class="file-label">Choose Image</label>
+                    <input type="file" name="profile_image" id="fileInput">
+
+                    <button type="submit" class="upload-btn">Upload</button>
+                </form>
+            </div>
+
+            <!-- RIGHT SIDE -->
+            <div class="profile-right">
+
+                <div class="profile-header">
+                    <h2>{{user.Full_Name}}</h2>
+                    <p class="profile-email">{{user.email}}</p>
+                </div>
+                <div class="profile_detail">
+
+                    <form method="POST" action="{{ url_for('update_profile') }}" class="profile-form">
+
+                        <div class="form-group">
+                            <label>Mobile</label>
+                            <input type="text" name="mobile" value="{{ user.mobile }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Bio</label>
+                            <textarea name="bio">{{ user.bio }}</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>LinkedIn</label>
+                            <input type="text" name="linkedin" value="{{ user.linkedin }}">
+                        </div>
+
+                        <div class="form-group">
+                            <label>GitHub</label>
+                            <input type="text" name="github" value="{{ user.github }}">
+                        </div>
+
+                        <button type="submit" class="save-btn">
+                            Save Changes
+                        </button>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="chatbot-container">
+
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button> <!-- ✅ ADD THIS -->
+        </div>
+
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button> <!-- ✅ FIX -->
+        </div>
+
+    </div>
+
+
+    <!-- ✅ SCRIPT AT BOTTOM -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const fileInput = document.getElementById("fileInput");
+            const preview = document.getElementById("preview");
+
+            if (fileInput && preview) {
+
+                fileInput.addEventListener("change", function (event) {
+
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    // Allow only images
+                    if (!file.type.startsWith("image/")) {
+                        alert("Please select a valid image file.");
+                        fileInput.value = "";
+                        return;
+                    }
+
+                    const reader = new FileReader();
+
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                    };
+
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+
+        function togglesidebar() {
+            document.getElementById("sidebar").classList.toggle("active")
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            // ✅ Check if elements exist (prevents crash on some pages)
+            if (!profileBtn || !profileCard) return;
+
+            // ✅ Toggle profile card
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            // ✅ Prevent closing when clicking inside the card
+            profileCard.addEventListener("click", function (e) {
+                e.stopPropagation();
+            });
+
+            // ✅ Close when clicking anywhere outside
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+
+            // ✅ Optional: Close on ESC key (pro UX)
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape") {
+                    profileCard.classList.remove("show");
+                }
+            });
+        });
+    </script>
+
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+
+
+</body>

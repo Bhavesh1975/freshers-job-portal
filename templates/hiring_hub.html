@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+</head>
+
+<body>
+
+    <!-- 🔷 NAVBAR -->
+    <div class="up">
+        <ul>
+            <li><a href="{{url_for('main')}}">Home</a></li>
+            <li><a href="{{url_for('about')}}">About</a></li>
+            {% if session.get('role') == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+            {% if session.get('role') == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session.get('role') == 'recruiter' %}
+            <li><a href="/hiring_hub" style="color: #0399f7;">Hiring Hub</a></li>
+            {% endif %}
+            {% if session.get('role') == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <!-- PROFILE -->
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user and current_user.profile_image else 'default.png')) }}"
+                        width="100"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{ current_user.Full_Name if current_user else '' }}</h4>
+                    <p>{{ current_user.Email if current_user else '' }}</p>
+                </div>
+                <div class="card-links">
+                    <a href="/profile">My Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHATBOT -->
+    <div id="chatbot-container">
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="hub-wrapper">
+
+        <!-- Header -->
+        <div class="hub-header">
+            <div>
+                <h1 class="hub-title">Hiring Hub</h1>
+                <p class="hub-subtitle">Manage applicants, schedule tests and track results</p>
+            </div>
+            <a href="/post" class="hub-post-btn">+ Post New Job</a>
+        </div>
+
+        <!-- Stats row -->
+        <div class="hub-stats">
+            <div class="hub-stat-card">
+                <div class="hub-stat-num">{{ jobs|length }}</div>
+                <div class="hub-stat-label">Jobs Posted</div>
+            </div>
+            <div class="hub-stat-card">
+                <div class="hub-stat-num">{{ total_applicants }}</div>
+                <div class="hub-stat-label">Total Applicants</div>
+            </div>
+            <div class="hub-stat-card">
+                <div class="hub-stat-num">{{ tests_scheduled }}</div>
+                <div class="hub-stat-label">Tests Scheduled</div>
+            </div>
+            <div class="hub-stat-card">
+                <div class="hub-stat-num">{{ tests_completed }}</div>
+                <div class="hub-stat-label">Tests Completed</div>
+            </div>
+        </div>
+
+        <!-- Jobs list -->
+        {% if jobs %}
+        <div class="hub-jobs">
+            {% for job in jobs %}
+            <div class="hub-job-card" id="job-{{ job.id }}">
+
+                <!-- Job header -->
+                <div class="hub-job-header" onclick="toggleJob({{ job.id }})">
+                    <div class="hub-job-info">
+                        <div class="hub-job-title">{{ job.job_title }}</div>
+                        <div class="hub-job-meta">
+                            <span>{{ job.company }}</span>
+                            <span class="hub-dot">·</span>
+                            <span>{{ job.city }}</span>
+                            <span class="hub-dot">·</span>
+                            <span>{{ job.work_mode }}</span>
+                            <span class="hub-dot">·</span>
+                            <span>Posted {{ job.posted_date.strftime('%b %d, %Y') if job.posted_date else '' }}</span>
+                        </div>
+                    </div>
+                    <div class="hub-job-right">
+                        <span class="hub-applicant-count">{{ job.applicant_count }} applicants</span>
+                        {% if job.test_status == 'live' %}
+                        <span class="hub-badge hub-badge-live">Test Live</span>
+                        {% elif job.test_status == 'scheduled' %}
+                        <span class="hub-badge hub-badge-scheduled">Test Scheduled</span>
+                        {% else %}
+                        <span class="hub-badge hub-badge-none">No Test</span>
+                        {% endif %}
+                        <span class="hub-chevron" id="chevron-{{ job.id }}">▼</span>
+                    </div>
+                </div>
+
+                <!-- Expandable body -->
+                <div class="hub-job-body" id="body-{{ job.id }}" style="display:none;">
+                    <div class="hub-job-body-grid">
+
+                        <!-- LEFT: Applicants -->
+                        <div class="hub-applicants-panel">
+                            <div class="hub-panel-title">Applicants</div>
+
+                            {% if job.applicants %}
+                            <div class="hub-applicant-list">
+                                {% for app in job.applicants %}
+                                <div class="hub-applicant-row">
+                                    <div class="hub-avatar">{{ app.name[:2].upper() }}</div>
+                                    <div class="hub-applicant-info">
+                                        <div class="hub-applicant-name">{{ app.name }}</div>
+                                        <div class="hub-applicant-sub">{{ app.email }} · {{ app.city }}</div>
+                                        <div class="hub-applicant-sub">Exp: {{ app.experience }} yr · {{ app.qualification }}</div>
+                                    </div>
+                                    <div class="hub-applicant-actions">
+
+                                        {% if app.slot_status == 'scheduled' %}
+                                        <span class="hub-slot-badge hub-slot-confirmed">Slot: {{ app.slot_time }}</span>
+                                        {% elif app.slot_status == 'completed' %}
+                                        <span class="hub-slot-badge hub-slot-done">
+                                            Done · {{ app.score }}/{{ job.total_questions }}
+                                        </span>
+                                        {% elif app.slot_status == 'terminated' %}
+                                        <span class="hub-slot-badge hub-slot-terminated">Terminated</span>
+                                        {% else %}
+                                        <span class="hub-slot-badge hub-slot-pending">Pending</span>
+                                        {% endif %}
+
+                                        <select class="hub-status-select" id="status-{{ app.id }}"
+                                            onchange="handleStatusChange({{ app.id }}, this.value)"
+                                            style="padding:4px 8px;border-radius:6px;border:1px solid #e2e8f0;font-size:12px;font-weight:600;cursor:pointer;outline:none;background:#f8fafc;color:#374151;">
+                                            <option value="applied" {% if app.app_status=='applied' or not app.app_status %}selected{% endif %}>📋 Under Review</option>
+                                            <option value="shortlisted" {% if app.app_status=='shortlisted' %}selected{% endif %}>✓ Shortlist</option>
+                                            <option value="rejected" {% if app.app_status=='rejected' %}selected{% endif %}>❌ Reject</option>
+                                        </select>
+
+                                        <div id="reason-box-{{ app.id }}"
+                                            style="display:{% if app.app_status=='rejected' %}flex{% else %}none{% endif %};gap:6px;align-items:center;margin-top:4px;">
+                                            <input type="text" id="reason-{{ app.id }}"
+                                                value="{{ app.rejection_reason or '' }}"
+                                                placeholder="Reason for rejection…"
+                                                style="padding:5px 10px;border-radius:6px;border:1px solid #fca5a5;font-size:12px;color:#374151;width:180px;outline:none;">
+                                            <button onclick="saveStatus({{ app.id }})"
+                                                style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+                                                Save
+                                            </button>
+                                        </div>
+
+                                        <a href="{{ app.resume }}" target="_blank" class="hub-resume-btn">Resume</a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="hub-empty">No applicants yet.</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- RIGHT: Test Setup -->
+                        <div class="hub-test-panel">
+                            <div class="hub-panel-title">Test Setup</div>
+
+                            <form action="/hiring-hub/schedule" method="POST" enctype="multipart/form-data"
+                                class="hub-test-form">
+                                <input type="hidden" name="job_id" value="{{ job.id }}">
+
+                                <div class="hub-field">
+                                    <label class="hub-label">Test Duration (minutes)</label>
+                                    <input type="number" name="duration" class="hub-input"
+                                        value="{{ job.test_duration or 30 }}" min="5" max="180">
+                                </div>
+
+                                <div class="hub-field">
+                                    <label class="hub-label">Select 2 Dates</label>
+                                    <div class="hub-date-row">
+                                        <input type="date" name="date_1" class="hub-input" value="{{ job.date_1 or '' }}">
+                                        <input type="date" name="date_2" class="hub-input" value="{{ job.date_2 or '' }}">
+                                    </div>
+                                </div>
+
+                                <div class="hub-field">
+                                    <label class="hub-label">Select 3 Time Slots</label>
+                                    <div class="hub-time-row">
+                                        <input type="time" name="slot_1" class="hub-input" value="{{ job.slot_1 or '' }}">
+                                        <input type="time" name="slot_2" class="hub-input" value="{{ job.slot_2 or '' }}">
+                                        <input type="time" name="slot_3" class="hub-input" value="{{ job.slot_3 or '' }}">
+                                    </div>
+                                </div>
+
+                                <div class="hub-field">
+                                    <label class="hub-label">Add Questions</label>
+                                    <div class="hub-q-tabs">
+                                        <button type="button" class="hub-qtab active"
+                                            onclick="switchTab({{ job.id }}, 'csv', this)">CSV Upload</button>
+                                        <button type="button" class="hub-qtab"
+                                            onclick="switchTab({{ job.id }}, 'manual', this)">Manual Entry</button>
+                                        <button type="button" class="hub-qtab"
+                                            onclick="switchTab({{ job.id }}, 'bank', this)">Question Bank</button>
+                                    </div>
+
+                                    <!-- CSV -->
+                                    <div id="tab-csv-{{ job.id }}" class="hub-qtab-content">
+                                        <div class="hub-upload-area"
+                                            onclick="document.getElementById('csv-{{ job.id }}').click()">
+                                            <div class="hub-upload-icon">📄</div>
+                                            <div class="hub-upload-text">Click to upload CSV file</div>
+                                            <div class="hub-upload-hint">question, option_1…option_6, correct_answer, solution</div>
+                                            <input type="file" id="csv-{{ job.id }}" name="csv_file" accept=".csv"
+                                                style="display:none" onchange="showFileName(this, {{ job.id }})">
+                                        </div>
+                                        <div class="hub-file-name" id="fname-{{ job.id }}"></div>
+                                    </div>
+
+                                    <!-- Manual -->
+                                    <div id="tab-manual-{{ job.id }}" class="hub-qtab-content" style="display:none;">
+                                        <div id="manual-questions-{{ job.id }}">
+                                            <div class="hub-manual-q" id="mq-{{ job.id }}-1">
+                                                <div class="hub-mq-header">
+                                                    <span class="hub-mq-num">Q1</span>
+                                                    <button type="button" class="hub-mq-remove"
+                                                        onclick="removeQ({{ job.id }}, 1)">✕</button>
+                                                </div>
+                                                <input type="text" name="mq_text_{{ job.id }}[]"
+                                                    placeholder="e.g. What is the time complexity of binary search?"
+                                                    class="hub-input hub-mq-input">
+                                                <div class="hub-options-wrap" id="opts-{{ job.id }}-1">
+                                                    <input type="text" name="mq_opt_{{ job.id }}[]" placeholder="Option 1 — e.g. O(n)" class="hub-input hub-opt-input">
+                                                    <input type="text" name="mq_opt_{{ job.id }}[]" placeholder="Option 2 — e.g. O(log n)" class="hub-input hub-opt-input">
+                                                    <input type="text" name="mq_opt_{{ job.id }}[]" placeholder="Option 3 — e.g. O(n²)" class="hub-input hub-opt-input">
+                                                    <input type="text" name="mq_opt_{{ job.id }}[]" placeholder="Option 4 — e.g. O(1)" class="hub-input hub-opt-input">
+                                                </div>
+                                                <div class="hub-mq-footer">
+                                                    <input type="number" name="mq_ans_{{ job.id }}[]"
+                                                        placeholder="Enter correct option no. (1–4)"
+                                                        class="hub-input hub-ans-input" min="1">
+                                                    <button type="button" class="hub-add-opt-btn"
+                                                        onclick="addOption({{ job.id }}, 1)">+ Add Option</button>
+                                                </div>
+                                                <input type="text" name="mq_sol_{{ job.id }}[]"
+                                                    placeholder="Explain the answer here (optional)"
+                                                    class="hub-input hub-mq-input">
+                                            </div>
+                                        </div>
+                                        <button type="button" class="hub-add-q-btn"
+                                            onclick="addQuestion({{ job.id }})">+ Add Question</button>
+                                    </div>
+
+                                    <!-- Question Bank -->
+                                    <div id="tab-bank-{{ job.id }}" class="hub-qtab-content" style="display:none;">
+                                        <div class="hub-bank-filters">
+                                            <select name="bank_topic" class="hub-input">
+                                                <option value="">All Topics</option>
+                                                <option value="Aptitude">Aptitude</option>
+                                                <option value="Reasoning">Reasoning</option>
+                                                <option value="Verbal">Verbal</option>
+                                            </select>
+                                            <select name="bank_level" class="hub-input">
+                                                <option value="">All Levels</option>
+                                                <option value="basic">Basic</option>
+                                                <option value="intermediate">Intermediate</option>
+                                                <option value="advanced">Advanced</option>
+                                            </select>
+                                            <input type="number" name="bank_count" class="hub-input"
+                                                placeholder="No. of questions (e.g. 10)" min="1" max="50">
+                                        </div>
+                                        <div class="hub-bank-note">Questions will be randomly picked from the bank based on your filters.</div>
+                                    </div>
+                                </div>
+
+                                <div class="hub-form-actions">
+                                    <button type="submit" name="action" value="save" class="hub-save-btn">Save & Send Invites</button>
+                                    <button type="submit" name="action" value="draft" class="hub-draft-btn">Save Draft</button>
+                                </div>
+
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% else %}
+        <div class="hub-no-jobs">
+            <div class="hub-no-jobs-icon">📋</div>
+            <div class="hub-no-jobs-text">You haven't posted any jobs yet.</div>
+            <a href="/post" class="hub-post-btn">Post Your First Job</a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ✅ SINGLE CLEAN SCRIPT BLOCK — duplicate profile toggle removed -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // ── Profile card toggle ──────────────────────────────
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+        });
+
+        // ── Sidebar toggle ───────────────────────────────────
+        function togglesidebar() {
+            document.getElementById("sidebar")?.classList.toggle("active");
+        }
+
+        // ── Job expand / collapse ────────────────────────────
+        function toggleJob(jobId) {
+            const body = document.getElementById('body-' + jobId);
+            const chevron = document.getElementById('chevron-' + jobId);
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+                chevron.style.transform = 'rotate(180deg)';
+            } else {
+                body.style.display = 'none';
+                chevron.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // ── Question source tab switch ───────────────────────
+        function switchTab(jobId, tab, el) {
+            ['csv', 'manual', 'bank'].forEach(t => {
+                document.getElementById('tab-' + t + '-' + jobId).style.display = 'none';
+            });
+            document.getElementById('tab-' + tab + '-' + jobId).style.display = 'block';
+            el.closest('.hub-q-tabs').querySelectorAll('.hub-qtab').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        // ── Show uploaded file name ──────────────────────────
+        function showFileName(input, jobId) {
+            const fname = document.getElementById('fname-' + jobId);
+            fname.textContent = input.files[0] ? '📎 ' + input.files[0].name : '';
+        }
+
+        // ── Manual: add option ───────────────────────────────
+        let optCounts = {};
+        function addOption(jobId, qNum) {
+            const key = jobId + '-' + qNum;
+            optCounts[key] = optCounts[key] || 4;
+            if (optCounts[key] >= 6) return;
+            optCounts[key]++;
+            const wrap = document.getElementById('opts-' + jobId + '-' + qNum);
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.name = 'mq_opt_' + jobId + '[]';
+            inp.placeholder = 'Option ' + optCounts[key] + ' — enter answer choice';
+            inp.className = 'hub-input hub-opt-input';
+            wrap.appendChild(inp);
+        }
+
+        // ── Manual: add question ─────────────────────────────
+        let qCounts = {};
+        function addQuestion(jobId) {
+            qCounts[jobId] = qCounts[jobId] || 1;
+            qCounts[jobId]++;
+            const n = qCounts[jobId];
+            const container = document.getElementById('manual-questions-' + jobId);
+            const div = document.createElement('div');
+            div.className = 'hub-manual-q';
+            div.id = 'mq-' + jobId + '-' + n;
+            div.innerHTML = `
+                <div class="hub-mq-header">
+                    <span class="hub-mq-num">Q${n}</span>
+                    <button type="button" class="hub-mq-remove" onclick="removeQ(${jobId}, ${n})">✕</button>
+                </div>
+                <input type="text" name="mq_text_${jobId}[]"
+                    placeholder="e.g. What is the time complexity of binary search?"
+                    class="hub-input hub-mq-input">
+                <div class="hub-options-wrap" id="opts-${jobId}-${n}">
+                    <input type="text" name="mq_opt_${jobId}[]" placeholder="Option 1 — e.g. O(n)" class="hub-input hub-opt-input">
+                    <input type="text" name="mq_opt_${jobId}[]" placeholder="Option 2 — e.g. O(log n)" class="hub-input hub-opt-input">
+                    <input type="text" name="mq_opt_${jobId}[]" placeholder="Option 3 — e.g. O(n²)" class="hub-input hub-opt-input">
+                    <input type="text" name="mq_opt_${jobId}[]" placeholder="Option 4 — e.g. O(1)" class="hub-input hub-opt-input">
+                </div>
+                <div class="hub-mq-footer">
+                    <input type="number" name="mq_ans_${jobId}[]"
+                        placeholder="Enter correct option no. (1–4)"
+                        class="hub-input hub-ans-input" min="1">
+                    <button type="button" class="hub-add-opt-btn" onclick="addOption(${jobId}, ${n})">+ Add Option</button>
+                </div>
+                <input type="text" name="mq_sol_${jobId}[]"
+                    placeholder="Explain the answer here (optional)"
+                    class="hub-input hub-mq-input">
+            `;
+            container.appendChild(div);
+        }
+
+        // ── Manual: remove question ──────────────────────────
+        function removeQ(jobId, qNum) {
+            const el = document.getElementById('mq-' + jobId + '-' + qNum);
+            if (el) el.remove();
+        }
+
+        // ── Applicant status change ──────────────────────────
+        function handleStatusChange(appId, status) {
+            const box = document.getElementById('reason-box-' + appId);
+            if (status === 'rejected') {
+                box.style.display = 'flex';
+            } else {
+                box.style.display = 'none';
+                saveStatus(appId);
+            }
+        }
+
+        // ── Save applicant status via API ────────────────────
+        async function saveStatus(appId) {
+            const status = document.getElementById('status-' + appId).value;
+            const reason = document.getElementById('reason-' + appId)?.value || '';
+
+            const res = await fetch('/api/update_applicant_status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ applicant_id: appId, status: status, reason: reason })
+            });
+            const data = await res.json();
+            if (data.success) {
+                const sel = document.getElementById('status-' + appId);
+                sel.style.background = '#dcfce7';
+                setTimeout(() => sel.style.background = '#f8fafc', 1500);
+            } else {
+                alert('Failed to update status.');
+            }
+        }
+    </script>
+
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
+
+</html>

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+</head>
+
+<body>
+    <div class="up">
+        <ul>
+            <li><a href="{{url_for('main')}}">Home</a></li>
+            <li><a href="{{url_for('about')}}">About</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{current_user.Full_Name}}</h4>
+                    <p>{{current_user.Email}}</p>
+                </div>
+                <div class="card-links">
+                    <a href="\profile">My Profile</a>
+                    <a href="\logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="practice-container">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;color:black;">
+            <h2 style="color: black;">Practice Test</h2>
+            <span class="progress-label" id="progressLabel">Question 1 of {{ questions|length }}</span>
+        </div>
+
+        <div id="quiz-wrapper">
+            {% for q in questions %}
+            {% set q_index = loop.index %}
+            <div class="question-card"
+                data-index="{{ loop.index0 }}"
+                data-type="{{ q.type.lower() }}"
+                data-answer="{{ q.answer_index if q.type.lower() == 'mcq' else '' }}"
+                data-solution="{{ q.solution if q.type.lower() == 'mcq' else '' }}"
+                data-sample="{{ q.sample_answer if q.type.lower() == 'subjective' else '' }}"
+                data-keywords="{{ q.keywords if q.type.lower() == 'subjective' else '' }}"
+                data-model="{{ q.model_answer if q.type.lower() == 'subjective' else '' }}"
+                {% if loop.first %}style="display:block;"{% else %}style="display:none;"{% endif %}>
+
+                <p><strong>Q{{ q_index }}. {{ q.question }}</strong></p>
+
+                {% if q.type.lower() == 'mcq' %}
+                <div class="options">
+                    {% for opt in q.options %}
+                    <label class="option">
+                        <input type="radio" name="question_{{ q_index }}" value="{{ opt.option_index }}">
+                        {{ opt.option_text }}
+                    </label>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if q.type.lower() == 'subjective' %}
+
+                <!-- Keywords shown upfront -->
+                <div class="keywords-box">
+                    <strong>🔑 Key Concepts to Cover:</strong>
+                    <div class="keyword-tags">
+                        {% for kw in q.keywords.split(',') %}
+                        <span class="keyword-tag">{{ kw.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Model Answer shown upfront -->
+                <div class="model-answer-box">
+                    <strong>📌 Model Answer:</strong>
+                    <p>{{ q.model_answer }}</p>
+                </div>
+
+                <!-- Answer textarea -->
+                <textarea class="subjective-input" name="q{{ q_index }}" rows="4"
+                    placeholder="Write your answer here based on the model answer and key concepts above..."></textarea>
+                {% endif %}
+
+                <div class="result"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="nav-row">
+            <button class="nav-btn" id="prevBtn" onclick="navigate(-1)" disabled>← Previous</button>
+            <button class="submit-btn" id="submitBtn" onclick="submitCurrent()">Submit Answer</button>
+            <button class="nav-btn" id="nextBtn" onclick="navigate(1)" disabled>Next →</button>
+        </div>
+    </div>
+
+    <div id="chatbot-container">
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/learning.js') }}"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+        });
+
+        function togglesidebar() {
+            document.getElementById("sidebar").classList.toggle("active");
+        }
+    </script>
+
+    <script>
+        const cards = document.querySelectorAll('.question-card');
+        const total = cards.length;
+        let current = 0;
+        const submitted = {};
+
+        function updateUI() {
+            cards.forEach((c, i) => c.style.display = i === current ? 'block' : 'none');
+            document.getElementById('progressLabel').textContent = `Question ${current + 1} of ${total}`;
+            document.getElementById('prevBtn').disabled = current === 0;
+
+            const card = cards[current];
+            const isSubmitted = submitted[current];
+            const hasSelection = card.querySelector('input[type="radio"]:checked') ||
+                                 (card.querySelector('.subjective-input') &&
+                                  card.querySelector('.subjective-input').value.trim() !== '');
+
+            document.getElementById('submitBtn').disabled = !hasSelection || isSubmitted;
+            document.getElementById('submitBtn').style.opacity = (!hasSelection || isSubmitted) ? '0.4' : '1';
+            document.getElementById('nextBtn').disabled = !isSubmitted || current === total - 1;
+        }
+
+        function navigate(dir) {
+            current += dir;
+            updateUI();
+        }
+
+        function submitCurrent() {
+            const card = cards[current];
+            const type = card.dataset.type;
+            const resultDiv = card.querySelector('.result');
+
+            // Remove old boxes if resubmitting
+            card.querySelectorAll('.solution-box, .sample-box').forEach(el => el.remove());
+
+            if (type === 'mcq') {
+                const selected = card.querySelector('input[type="radio"]:checked');
+                if (!selected) return;
+
+                const correctIndex = parseInt(card.dataset.answer);
+                const selectedIndex = parseInt(selected.value);
+                const options = card.querySelectorAll('.option');
+
+                // Disable all radios
+                card.querySelectorAll('input[type="radio"]').forEach(r => r.disabled = true);
+
+                if (selectedIndex === correctIndex) {
+                    options[selectedIndex].classList.add('correct-option');
+                    resultDiv.className = 'result correct';
+                    resultDiv.textContent = '✓ Correct!';
+                } else {
+                    options[selectedIndex].classList.add('wrong-option');
+                    options[correctIndex].classList.add('correct-option');
+                    resultDiv.className = 'result wrong';
+                    resultDiv.textContent = `✗ Wrong. Correct answer: Option ${correctIndex + 1}`;
+
+                    // Show solution only on wrong answer
+                    const solution = card.dataset.solution;
+                    if (solution) {
+                        const solBox = document.createElement('div');
+                        solBox.className = 'solution-box';
+                        solBox.innerHTML = `<strong>Solution:</strong> ${solution}`;
+                        resultDiv.after(solBox);
+                    }
+                }
+
+            } else if (type === 'subjective') {
+                const textarea = card.querySelector('.subjective-input');
+                const userAnswer = textarea.value.trim().toLowerCase();
+                const keywords = (card.dataset.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+                const matched = keywords.filter(k => userAnswer.includes(k)).length;
+                const score = keywords.length ? Math.round((matched / keywords.length) * 100) : 0;
+
+                textarea.disabled = true;
+
+                // Show score result
+                resultDiv.className = score >= 50 ? 'result correct' : 'result wrong';
+                resultDiv.textContent = score >= 50
+                    ? `✓ Good answer! Keywords matched: ${matched}/${keywords.length}`
+                    : `✗ Needs improvement. Keywords matched: ${matched}/${keywords.length}`;
+
+                // Always show sample answer after submission
+                const sample = card.dataset.sample || card.dataset.model;
+                if (sample) {
+                    const sampleBox = document.createElement('div');
+                    sampleBox.className = 'sample-box';
+                    sampleBox.innerHTML = `<strong>✅ Sample Answer:</strong><p>${sample}</p>`;
+                    resultDiv.after(sampleBox);
+                }
+            }
+
+            submitted[current] = true;
+            updateUI();
+        }
+
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.addEventListener('change', updateUI));
+        document.querySelectorAll('.subjective-input').forEach(t => t.addEventListener('input', updateUI));
+
+        updateUI();
+    </script>
+</body>
+
+</html>

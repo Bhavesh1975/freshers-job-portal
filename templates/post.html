@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>Post a Job — Freshers Job Portal</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
+
+<style>
+* { box-sizing: border-box; }
+
+.pj-wrap {
+    width: 90%;
+    max-width: 860px;
+    margin: 36px auto 100px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.pj-hero {
+    text-align: center;
+    margin-bottom: 32px;
+}
+.pj-hero h1 {
+    font-size: 30px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.pj-hero p { font-size: 14px; color: #64748b; }
+
+.pj-card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    padding: 36px 40px;
+}
+
+.pj-section {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin: 28px 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pj-section:first-child { margin-top: 0; }
+.pj-section::before {
+    content: '';
+    width: 4px; height: 14px;
+    background: linear-gradient(180deg, #ff6ec4, #7873f5);
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.pj-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pj-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+.pj-field { display: flex; flex-direction: column; gap: 6px; }
+.pj-field label { font-size: 12px; font-weight: 600; color: #374151; }
+
+.pj-input, .pj-select, .pj-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    color: #111827;
+    background: #fafafa;
+    outline: none;
+    transition: border-color 0.25s, background 0.25s;
+}
+.pj-input:focus, .pj-select:focus, .pj-textarea:focus {
+    border-color: #7873f5;
+    background: #fff;
+}
+.pj-input::placeholder, .pj-textarea::placeholder { color: #9ca3af; }
+.pj-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-color: #fafafa;
+    padding-right: 36px;
+}
+.pj-textarea { resize: vertical; min-height: 160px; line-height: 1.65; }
+
+.pj-word-count { font-size: 11px; color: #9ca3af; text-align: right; margin-top: 4px; font-weight: 600; }
+.pj-word-count.warn { color: #ef4444; }
+
+.pj-divider { border: none; border-top: 1px solid #f1f5f9; margin: 28px 0 0; }
+
+.pj-submit-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+}
+.pj-cancel-btn {
+    padding: 12px 28px;
+    border-radius: 50px;
+    border: 2px solid #e5e7eb;
+    background: transparent;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+.pj-cancel-btn:hover { border-color: #9ca3af; color: #374151; }
+
+.pj-submit-btn {
+    padding: 13px 36px;
+    background: linear-gradient(45deg, #ff6ec4, #7873f5);
+    color: #fff;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 6px 20px rgba(120,115,245,0.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pj-submit-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(120,115,245,0.5); }
+
+@media(max-width: 680px) {
+    .pj-grid-2, .pj-grid-3 { grid-template-columns: 1fr; }
+    .pj-card { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ NAVBAR ══════ -->
+<div class="up">
+    <ul>
+        <li><a href="{{ url_for('main') }}">Home</a></li>
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        {% if session['role'] == 'recruiter' %}
+        <li><a href="/post" style="color:#0399f7;">Post Job</a></li>
+        {% endif %}
+        {% if session['role'] == 'user' %}
+        <li><a href="/resume_checker">Resume Checker</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('analytics') }}">Analysis</a></li>
+        <li><a href="{{ url_for('learning') }}">Learning Dashboard</a></li>
+        {% if session['role'] == 'recruiter' %}
+        <li><a href="/hiring_hub">Hiring Hub</a></li>
+        {% endif %}
+        {% if session['role'] == 'user' %}
+        <li><a href="/my_applications">My Applications</a></li>
+        {% endif %}
+    </ul>
+    <div class="profile-container">
+        {% if current_user and current_user.profile_image %}
+        <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+            class="nav-profile-img"
+            onerror="this.onerror=null; this.src='/static/images/profile.jpeg';">
+        {% else %}
+        <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+            style="background-color:#4f46e5;">
+        {% endif %}
+        <div class="profile-card" id="profileCard">
+            <div class="card-header">
+                <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                    width="100" onerror="this.onerror=null; this.src='/static/images/profile.jpeg';">
+                <h4>{{ current_user.Full_Name }}</h4>
+                <p>{{ current_user.Email }}</p>
+            </div>
+            <div class="card-links">
+                <a href="/profile">My Profile</a>
+                <a href="/setting">Settings</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ MAIN ══════ -->
+<div class="pj-wrap">
+
+    <div class="pj-hero">
+        <h1><i class="fa fa-briefcase" style="font-size:26px;"></i> Post a New Job</h1>
+        <p>Fill in the details below to publish your listing to freshers across India</p>
+    </div>
+
+    <div class="pj-card">
+        <form action="/post" method="POST">
+
+            <!-- Company & Role -->
+            <div class="pj-section">🏢 Company & Role</div>
+            <div class="pj-grid-2">
+                <div class="pj-field">
+                    <label>Job Title *</label>
+                    <input type="text" name="job_title" class="pj-input" placeholder="e.g. Software Engineer" required>
+                </div>
+                <div class="pj-field">
+                    <label>Company Name *</label>
+                    <input type="text" name="company" class="pj-input" placeholder="e.g. TechCorp India" required>
+                </div>
+                <div class="pj-field">
+                    <label>Industry *</label>
+                    <input type="text" name="industry" class="pj-input" placeholder="e.g. Information Technology" required>
+                </div>
+                <div class="pj-field">
+                    <label>Organisation Email *</label>
+                    <input type="email" name="email" class="pj-input" placeholder="hr@company.com" required>
+                </div>
+            </div>
+
+            <!-- Job Details -->
+            <div class="pj-section">📋 Job Details</div>
+            <div class="pj-grid-3">
+                <div class="pj-field">
+                    <label>City *</label>
+                    <input type="text" name="city" class="pj-input" placeholder="e.g. Bangalore" required>
+                </div>
+                <div class="pj-field">
+                    <label>Experience *</label>
+                    <input type="text" name="experience" class="pj-input" placeholder="e.g. 0–2 Years / Fresher" required>
+                </div>
+                <div class="pj-field">
+                    <label>Employment Type *</label>
+                    <select name="employment" class="pj-select" required>
+                        <option value="" disabled selected>Select type</option>
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Internship">Internship</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Freelance">Freelance</option>
+                    </select>
+                </div>
+            </div>
+            <div class="pj-grid-2" style="margin-top:16px;">
+                <div class="pj-field">
+                    <label>Work Mode *</label>
+                    <select name="work_mode" class="pj-select" required>
+                        <option value="" disabled selected>Select mode</option>
+                        <option value="On-site">On-site</option>
+                        <option value="Remote">Remote</option>
+                        <option value="Hybrid">Hybrid</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="pj-section">📝 Job Description</div>
+            <div class="pj-field">
+                <label>Description (max 300 words)</label>
+                <textarea name="description" id="description" class="pj-textarea"
+                    placeholder="Describe the role, responsibilities, required skills, and what makes this opportunity exciting…"></textarea>
+                <div class="pj-word-count" id="wordCount">0 / 300 words</div>
+            </div>
+
+            <hr class="pj-divider">
+
+            <div class="pj-submit-row">
+                <a href="{{ url_for('main') }}" class="pj-cancel-btn">Cancel</a>
+                <button type="submit" class="pj-submit-btn">
+                    <i class="fa fa-paper-plane"></i> Post Job
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- ══════ CHATBOT ══════ -->
+<div id="chatbot-container">
+    <div class="chat-header">
+        <span>🤖 Assistant</span>
+        <button id="closeChat">✖</button>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="bot-message">Hi 👋 How can I help you?</div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="Type a message…" />
+        <button id="sendBtn" type="button">Send</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn  = document.getElementById('profileBtn');
+    const card = document.getElementById('profileCard');
+    btn.addEventListener('click', e => { e.stopPropagation(); card.classList.toggle('show'); });
+    document.addEventListener('click', () => card.classList.remove('show'));
+    document.getElementById('closeChat').addEventListener('click', () => {
+        document.getElementById('chatbot-container').classList.remove('active');
+    });
+});
+
+const textarea  = document.getElementById('description');
+const wordCount = document.getElementById('wordCount');
+const MAX_WORDS = 300;
+
+textarea.addEventListener('input', function () {
+    let words = this.value.trim().split(/\s+/).filter(w => w.length > 0);
+    if (words.length > MAX_WORDS) {
+        this.value = words.slice(0, MAX_WORDS).join(' ');
+        words = words.slice(0, MAX_WORDS);
+    }
+    wordCount.textContent = `${words.length} / ${MAX_WORDS} words`;
+    wordCount.className = 'pj-word-count' + (words.length > 250 ? ' warn' : '');
+});
+</script>
+<script>window.process = undefined;</script>
+<script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
+</html>

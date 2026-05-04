@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/test.css') }}">
+    <title>Mock Test – Freshers Job Portal</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
+</head>
+
+<body>
+
+    <!-- NAVBAR -->
+    <div class="up">
+        <ul>
+            <li><a href="{{ url_for('main') }}">Home</a></li>
+            <li><a href="{{ url_for('about') }}">About</a></li>
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('analytics') }}">Analysis</a></li>
+            <li><a href="{{ url_for('learning') }}" style="color: #0399f7;">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{ current_user.Full_Name }}</h4>
+                    <p>{{ current_user.Email }}</p>
+                </div>
+                <div class="card-links">
+                    <a href="/profile">My Profile</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TEST SCREEN ── -->
+    <div class="test-wrapper" id="testScreen">
+
+        <!-- Top bar -->
+        <div class="test-topbar">
+            <div class="test-topbar-left">
+                <span class="test-badge">Mock Test</span>
+                <span class="test-total-label">{{ questions|length }} Questions · {{ duration }} Minutes</span>
+            </div>
+            <div class="timer-box" id="timerDisplay">
+                <span class="timer-icon">⏱</span>
+                <span id="timerText">00:00</span>
+            </div>
+        </div>
+
+        <!-- Body -->
+        <div class="test-body">
+
+            <!-- Question card -->
+            <div class="test-question-card">
+                <div class="test-qmeta">
+                    Question <span id="qNum">1</span> of {{ questions|length }}
+                    &nbsp;·&nbsp; <span id="qTopic"></span>
+                </div>
+
+                <div class="test-qtext" id="qText"></div>
+
+                <div class="test-options" id="qOptions"></div>
+
+                <!-- Nav row -->
+                <div class="test-qnav">
+                    <button class="test-nav-btn" onclick="tNavigate(-1)" id="tPrevBtn">← Prev</button>
+                    <button class="test-skip-btn" onclick="tSkip()">Skip</button>
+                    <button class="test-nav-btn" onclick="tNavigate(1)" id="tNextBtn">Next →</button>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="test-sidebar">
+                <div class="palette-title">Question Palette</div>
+
+                <div class="palette-grid" id="paletteGrid">
+                    {% for q in questions %}
+                    <div class="palette-cell" id="cell-{{ loop.index0 }}" onclick="tGoTo({{ loop.index0 }})">
+                        {{ loop.index }}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="palette-legend">
+                    <div><span class="legend-dot answered"></span> Answered</div>
+                    <div><span class="legend-dot skipped"></span> Skipped</div>
+                    <div><span class="legend-dot unanswered"></span> Not Visited</div>
+                </div>
+
+                <button class="test-submit-final-btn" onclick="confirmSubmit()">Submit Test</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RESULT SCREEN ── -->
+    <div id="resultScreen" style="display:none;" class="result-screen">
+
+        <!-- Score card -->
+        <div class="score-card">
+            <div class="score-circle-wrap">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="52" />
+                    <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52" />
+                </svg>
+                <div class="score-center">
+                    <div class="score-num" id="scoreNum">0</div>
+                    <div class="score-denom" id="scoreDenom">/0</div>
+                </div>
+            </div>
+
+            <div class="score-stats">
+                <div class="stat correct-stat">
+                    <strong id="statCorrect">0</strong> Correct
+                </div>
+                <div class="stat wrong-stat">
+                    <strong id="statWrong">0</strong> Wrong
+                </div>
+                <div class="stat skipped-stat">
+                    <strong id="statSkipped">0</strong> Skipped
+                </div>
+                <div class="stat unseen-stat">
+                    <strong id="statUnseen">0</strong> Unseen
+                </div>
+            </div>
+        </div>
+
+        <!-- Review list -->
+        <div class="review-header">Answer Review</div>
+        <div class="review-list" id="reviewList"></div>
+
+        <!-- Actions -->
+        <div style="text-align:center; margin-top:32px;">
+            <a href="{{ url_for('test_start') }}" class="retake-btn">Retake Test</a>
+            <a href="{{ url_for('learning') }}" class="home-btn">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- ── DATA ── -->
+    <script>
+        const QUESTIONS = [
+            {% for q in questions %}
+        {
+            id: { { q.id } },
+            question: { { (q.question or '') | tojson } },
+            topic: { { (q.topic or '') | tojson } },
+            options: [
+                {% for opt in q.options %}
+        {
+            index: { { opt.option_index } },
+            text: { { (opt.option_text or '') | tojson } }
+        } {% if not loop.last %}, {% endif %}
+        {% endfor %}
+                ],
+        answer: { { q.answer_index if q.answer_index is not none else "null" } },
+        solution: { { (q.solution or '') | tojson } }
+            }{% if not loop.last %}, {% endif %}
+        {% endfor %}
+        ];
+
+        const DURATION = {{ duration }} * 60;
+    </script>
+
+    <script>
+        // ── Profile card toggle ──
+        document.getElementById('profileBtn').addEventListener('click', function (e) {
+            e.stopPropagation();
+            document.getElementById('profileCard').classList.toggle('show');
+        });
+        document.addEventListener('click', function () {
+            document.getElementById('profileCard').classList.remove('show');
+        });
+
+        let current = 0;
+        const total = QUESTIONS.length;
+        const userAnswers = new Array(total).fill(null);   // null=unseen, -1=skipped, N=answered
+        const visited = new Array(total).fill(false);
+
+        // ── Timer ──
+        let timeLeft = DURATION;
+        const timerText = document.getElementById('timerText');
+        const timerBox = document.getElementById('timerDisplay');
+
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            const m = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+            const s = String(timeLeft % 60).padStart(2, '0');
+            timerText.textContent = m + ':' + s;
+
+            if (timeLeft <= 300) timerBox.classList.add('timer-warning');
+            if (timeLeft <= 0) { clearInterval(timerInterval); showResult(); }
+        }, 1000);
+
+        // ── Render question ──
+        function renderQuestion(i) {
+            const q = QUESTIONS[i];
+            visited[i] = true;
+
+            document.getElementById('qNum').textContent = i + 1;
+            document.getElementById('qTopic').textContent = q.topic || '';
+            document.getElementById('qText').textContent = q.question;
+
+            // Options
+            const optDiv = document.getElementById('qOptions');
+            optDiv.innerHTML = '';
+            q.options.forEach(opt => {
+                const label = document.createElement('label');
+                label.className = 'test-option' + (userAnswers[i] === opt.index ? ' selected' : '');
+
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'opt';
+                radio.checked = (userAnswers[i] === opt.index);
+
+                radio.onchange = () => {
+                    userAnswers[i] = opt.index;
+                    updatePalette();
+                    document.querySelectorAll('.test-option').forEach(el => el.classList.remove('selected'));
+                    label.classList.add('selected');
+                };
+
+                label.appendChild(radio);
+                label.appendChild(document.createTextNode(' ' + opt.text));
+                optDiv.appendChild(label);
+            });
+
+            // Nav buttons
+            document.getElementById('tPrevBtn').disabled = (i === 0);
+            document.getElementById('tNextBtn').disabled = (i === total - 1);
+
+            updatePalette();
+        }
+
+        // ── Palette ──
+        function updatePalette() {
+            for (let i = 0; i < total; i++) {
+                const cell = document.getElementById('cell-' + i);
+                cell.className = 'palette-cell';
+
+                if (i === current) {
+                    cell.classList.add('active');
+                } else if (userAnswers[i] !== null && userAnswers[i] !== -1) {
+                    cell.classList.add('answered');
+                } else if (userAnswers[i] === -1) {
+                    cell.classList.add('skipped');
+                } else if (visited[i]) {
+                    cell.classList.add('visited');
+                }
+            }
+        }
+
+        // ── Navigation ──
+        function tNavigate(dir) {
+            current = Math.max(0, Math.min(total - 1, current + dir));
+            renderQuestion(current);
+        }
+
+        function tGoTo(i) {
+            current = i;
+            renderQuestion(current);
+        }
+
+        function tSkip() {
+            userAnswers[current] = -1;
+            if (current < total - 1) { current++; renderQuestion(current); }
+            else updatePalette();
+        }
+
+        function confirmSubmit() {
+            if (confirm('Submit the test now?')) showResult();
+        }
+
+        // ── Result ──
+        function showResult() {
+            clearInterval(timerInterval);
+            document.getElementById('testScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'block';
+
+            let correct = 0, wrong = 0, skipped = 0, unseen = 0;
+
+            QUESTIONS.forEach((q, i) => {
+                if (userAnswers[i] === null) unseen++;
+                else if (userAnswers[i] === -1) skipped++;
+                else if (userAnswers[i] === q.answer) correct++;
+                else wrong++;
+            });
+
+            document.getElementById('scoreNum').textContent = correct;
+            document.getElementById('scoreDenom').textContent = '/' + total;
+            document.getElementById('statCorrect').textContent = correct;
+            document.getElementById('statWrong').textContent = wrong;
+            document.getElementById('statSkipped').textContent = skipped;
+            document.getElementById('statUnseen').textContent = unseen;
+
+            // Animate ring
+            const pct = total > 0 ? correct / total : 0;
+            const circumference = 2 * Math.PI * 52;
+            const ring = document.getElementById('ringFill');
+            ring.style.strokeDasharray = circumference;
+            ring.style.strokeDashoffset = circumference * (1 - pct);
+            ring.style.transition = 'stroke-dashoffset 1s ease';
+            ring.style.stroke = pct >= 0.7 ? '#22c55e' : pct >= 0.4 ? '#f59e0b' : '#ef4444';
+
+            // Review
+            const reviewList = document.getElementById('reviewList');
+            reviewList.innerHTML = '';
+
+            QUESTIONS.forEach((q, i) => {
+                const ua = userAnswers[i];
+                let statusClass, statusLabel;
+                if (ua === null) { statusClass = ''; statusLabel = 'Not Seen'; }
+                else if (ua === -1) { statusClass = 'review-skipped'; statusLabel = 'Skipped'; }
+                else if (ua === q.answer) { statusClass = 'review-correct'; statusLabel = '✓ Correct'; }
+                else { statusClass = 'review-wrong'; statusLabel = '✗ Wrong'; }
+
+                const correctOpt = q.options.find(o => o.index === q.answer);
+                const yourOpt = q.options.find(o => o.index === ua);
+
+                const item = document.createElement('div');
+                item.className = 'review-item ' + statusClass;
+
+                item.innerHTML = `
+                    <div class="review-qnum">
+                        Q${i + 1}
+                        ${q.topic ? `<span class="review-topic">${q.topic}</span>` : ''}
+                        <span class="review-status">${statusLabel}</span>
+                    </div>
+                    <div class="review-qtext">${q.question}</div>
+                    <div class="review-answers">
+                        ${ua !== null && ua !== -1 ? `<div class="your-ans">Your answer: <span>${yourOpt ? yourOpt.text : '—'}</span></div>` : ''}
+                        <div class="correct-ans">Correct answer: <span>${correctOpt ? correctOpt.text : '—'}</span></div>
+                    </div>
+                    ${q.solution ? `<div class="review-solution">💡 ${q.solution}</div>` : ''}
+                `;
+
+                reviewList.appendChild(item);
+            });
+
+            // Scroll to top of result
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ── Init ──
+        if (total > 0) {
+            renderQuestion(0);
+        } else {
+            document.getElementById('qText').textContent = 'No questions available.';
+        }
+    </script>
+
+</body>
+
+</html>

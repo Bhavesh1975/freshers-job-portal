@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+
+    <style>
+        /* Match select exactly to form input rules in style.css */
+        #registerform select[name="role"] {
+            width: 80%;
+            height: 40px;
+            padding: 0 36px 0 10px;
+            margin: 10px auto;
+            border-radius: 20px;
+            background: transparent;
+            color: white;
+            font-size: 20px;
+            display: block;
+ 
+            /* Remove browser default arrow + styling */
+            appearance: none;
+            -webkit-appearance: none;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+ 
+            /* White chevron arrow matching white text */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23ffffff' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 11px;
+        }
+ 
+        #registerform select[name="role"] option {
+            background: #7873f5;
+            color: #fff;
+        }
+ 
+        #registerform select[name="role"]:focus {
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+ 
+        /* Hide the plain label */
+        #registerform label {
+            display: none;
+        }
+    </style>
+
+    <script>
+        function toggleForm(show) {
+            const loginForm = document.getElementById("loginform");
+            const registerForm = document.getElementById("registerform");
+            const forgotForm = document.getElementById("forgetform");
+            const verifyForm = document.getElementById("verify");
+
+            loginForm.style.display = "none";
+            registerForm.style.display = "none";
+            forgotForm.style.display = "none";
+            verifyForm.style.display = "none";
+
+            if (show === "login") loginForm.style.display = "block";
+            else if (show === "register") registerForm.style.display = "block";
+            else if (show === "forgot") forgotForm.style.display = "block";
+            else if (show === "verify") verifyForm.style.display = "block";
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const showForm = document.body.dataset.showForm || "login";
+            toggleForm(showForm);
+        });
+    </script>
+</head>
+
+<body data-show-form="{{ show_form | default('login') }}">
+    <div class="container">
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <p style="color:red;">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+
+        <!-- LOGIN FORM -->
+        <div id="loginform">
+            <h1>Login</h1>
+
+            <form action="/login" method="post">
+                <input type="email" name="email" placeholder="Email" required>
+                <br>
+                <input type="password" name="password" placeholder="Password" required>
+                <br>
+
+                <div class="login-options">
+                    <div class="remember">
+                        <input type="checkbox" name="remember" id="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <span id="register" onclick="toggleForm('register')">Register</span>
+                </div>
+
+                <div class="login-options">
+                    <span id="forget" onclick="toggleForm('forgot')">Forget Password</span>
+                </div>
+                <br>
+
+                <div class="submit">
+                    <button type="submit">Login</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- REGISTER FORM -->
+        <div id="registerform" style="display:none;">
+            <h1>Register</h1>
+
+            <form action="/register" method="post">
+                <input type="text" name="name" placeholder="Name" required>
+                <br>
+                <input type="email" name="email" placeholder="Email" required>
+                <br>
+                <input type="password" id="password" name="password" placeholder="Password"
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$"
+                    title="Must contain at least 8 characters, including uppercase, lowercase, number and special character"
+                    required>
+                <br>
+
+                <div class="rules">
+                    <span id="lower">• Lowercase letter</span>
+                    <span id="upper">• Uppercase letter</span>
+                    <span id="number">• Number</span>
+                    <span id="special">• Special character</span>
+                    <span id="length">• At least 8 characters</span>
+                </div>
+
+                <input type="password" name="confirm_password" placeholder="Confirm Password"
+                    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$"
+                    title="Must contain at least 8 characters, including uppercase, lowercase, number and special character"
+                    required>
+                <br>
+                <input type="tel" name="mobile" placeholder="Phone No." pattern="[6-9][0-9]{9}" maxlength="10" required>
+                <br>
+
+                <!-- Select styled to match inputs — label removed, placeholder option used instead -->
+                <select name="role" required>
+                    <option value="" disabled selected hidden>Select Role</option>
+                    <option value="user">Job Seeker</option>
+                    <option value="recruiter">Recruiter</option>
+                </select>
+                <br>
+
+                <div class="login-options">
+                    <span id="login" onclick="toggleForm('login')">Login</span>
+                </div>
+                <br>
+                <div class="submit">
+                    <button type="submit">Verify</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- FORGOT PASSWORD FORM -->
+        <div id="forgetform" style="display:none;">
+            <h1>Forgot Password</h1>
+
+            <form action="/forget" method="post">
+                <input type="email" name="email" placeholder="Enter your email" required>
+                <br>
+
+                <div class="login-options">
+                    <span id="back" onclick="toggleForm('login')">Back to Login</span>
+                </div>
+
+                <div class="submit">
+                    <button type="submit">Reset Password</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- VERIFY EMAIL FORM -->
+        <div id="verify" style="display:none;">
+            <h1>Verify Email</h1>
+
+            <form action="/verify_otp" method="post">
+                <input type="text" name="otp" placeholder="4-digit OTP" inputmode="numeric" pattern="[0-9]{4}"
+                    maxlength="4" autocomplete="one-time-code" required>
+                <br>
+
+                <div class="submit">
+                    <button type="submit">Verify OTP</button>
+                </div>
+
+                <div class="login-options">
+                    <span onclick="toggleForm('login')">Back to Login</span>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const password = document.getElementById("password");
+            if (!password) return;
+
+            password.addEventListener("input", () => {
+                const value = password.value;
+
+                const lower = /[a-z]/.test(value);
+                const upper = /[A-Z]/.test(value);
+                const number = /\d/.test(value);
+                const special = /[@$!%*?&]/.test(value);
+                const length = value.length >= 8;
+
+                toggle("lower", lower);
+                toggle("upper", upper);
+                toggle("number", number);
+                toggle("special", special);
+                toggle("length", length);
+            });
+
+            function toggle(id, valid) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if (valid) {
+                    el.classList.add("valid");
+                    el.innerHTML = "✔ " + el.textContent.replace("• ", "").replace("✔ ", "");
+                } else {
+                    el.classList.remove("valid");
+                    el.innerHTML = "• " + el.textContent.replace("✔ ", "").replace("• ", "");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>

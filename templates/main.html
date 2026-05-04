@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+</head>
+
+<body>
+    <div class="up">
+        <ul>
+            <li>
+                <div class="menu-toggle" onclick="togglesidebar()">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </li>
+            <li><a href="{{url_for('main')}}" style="color: #0399f7;">Home</a></li>
+            <li><a href="{{url_for('about')}}">About</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div id="sidebar" class="sidebar">
+            <div class="search-container">
+                <form method="GET" action="{{ url_for('main') }}">
+                    <h2>Filters</h2>
+                    <select name="job" class="search-input">
+                        <option value="">All Jobs</option>
+                        {% for j in job_titles %}
+                        <option value="{{ j.job_title }}" {% if job==j.job_title %}selected{% endif %}>
+                            {{ j.job_title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="city" class="search-input">
+                        <option value="">All Cities</option>
+                        {% for c in cities %}
+                        <option value="{{ c.city }}" {% if city==c.city %}selected{% endif %}>
+                            {{ c.city }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="mode" class="search-input">
+                        <option value="">All Work Modes</option>
+                        <option value="Remote" {% if mode=="Remote" %}selected{% endif %}>Remote</option>
+                        <option value="On-site" {% if mode=="On-site" %}selected{% endif %}>On-site</option>
+                        <option value="Hybrid" {% if mode=="Hybrid" %}selected{% endif %}>Hybrid</option>
+                    </select>
+
+                    <div class="button-group">
+                        <button type="submit" class="filter-btn">Search</button>
+
+                        <button type="reset" class="filter-btn">Reset</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{current_user.Full_Name}}</h4>
+                    <p>{{current_user.Email}}</p>
+                </div>
+
+                <div class="card-links">
+                    <a href="\profile">My Profile</a>
+                    <a href="\logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ SCRIPT AT BOTTOM -->
+    <script>
+        function togglesidebar() {
+            document.getElementById("sidebar").classList.toggle("active")
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+        });
+    </script>
+    <div class="parent">
+        {% for job in jobs %}
+        <div class="card">
+            <h3>{{ job.job_title }}</h3>
+
+            <p><strong>Company:</strong> {{ job.company }}</p>
+            <p><strong>City:</strong> {{ job.city }}</p>
+            <p><strong>Experience:</strong> {{ job.experience }}</p>
+            <p><strong>Work Mode:</strong> {{ job.work_mode }}</p>
+
+
+            <div class="card-footer">
+                <span>Posted: {{ job.posted_date }}</span>
+
+                <a href="{{ url_for('apply_job', id=job.id) }}">
+                    <button>Apply</button>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="parent1">
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('main', page=page-1) }}">← Prev</a>
+            {% endif %}
+
+            {% if page > 3 %}
+            <a href="{{ url_for('main', page=1) }}">1</a>
+            <span>...</span>
+            {% endif %}
+
+            {% for p in range(max(1, page-2), min(total_pages+1, page+3)) %}
+            {% if p == page %}
+            <span class="active">{{ p }}</span>
+            {% else %}
+            <a href="{{ url_for('main', page=p) }}">{{ p }}</a>
+            {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages-2 %} <span>...</span>
+                <a href="{{ url_for('main', page=total_pages) }}">{{ total_pages }}</a>
+                {% endif %}
+
+                {% if page < total_pages %} <a href="{{ url_for('main', page=page+1) }}">Next →</a>
+                    {% endif %}
+        </div>
+    </div>
+
+    <!-- Chatbot Container -->
+    <div id="chatbot-container">
+
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button> <!-- ✅ ADD THIS -->
+        </div>
+
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button> <!-- ✅ FIX -->
+        </div>
+
+    </div>
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
+
+</html>

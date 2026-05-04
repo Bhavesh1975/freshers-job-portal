@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Righteous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Job Analytics — Freshers Job Portal</title>
+    <link rel="icon" href="{{ url_for('static', filename='images/logo.png') }}">
+
+<style>
+/* ══════════════════════════════════════
+   ANALYTICS PAGE — page-specific styles
+   (navbar, body bg, chatbot → style.css)
+══════════════════════════════════════ */
+
+.an-wrap {
+    width: 90%;
+    max-width: 1200px;
+    margin: 36px auto 100px;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ── Hero heading ── */
+.an-hero {
+    text-align: center;
+    margin-bottom: 36px;
+}
+.an-hero h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+.an-hero p {
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* ── Filter bar ── */
+.an-filter {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+}
+.an-select {
+    padding: 12px 20px;
+    border-radius: 50px;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    color: #64748b;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 220px;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+.an-select option { background: #1e1b4b; color: #fff; }
+.an-select:focus { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.22); }
+
+.an-btn {
+    padding: 12px 32px;
+    border-radius: 50px;
+    border: none;
+    background: linear-gradient(45deg, #ff6ec4, #7873f5);
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(120,115,245,0.35);
+}
+.an-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(120,115,245,0.5); }
+.an-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+/* ── Loader ── */
+.an-loader {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+.an-loader.show { display: flex; }
+.an-dots { display: flex; gap: 5px; }
+.an-dots span {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: linear-gradient(45deg, #ff6ec4, #7873f5);
+    animation: an-bounce 1.2s infinite;
+}
+.an-dots span:nth-child(2) { animation-delay: 0.2s; }
+.an-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes an-bounce {
+    0%,80%,100% { transform: scale(0.6); opacity: 0.4; }
+    40%          { transform: scale(1);   opacity: 1;   }
+}
+
+/* ── Stat strip ── */
+.an-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+}
+.an-stat {
+    background: rgba(255,255,255,0.14);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    padding: 20px 24px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.an-stat:hover { transform: translateY(-5px); box-shadow: 0 14px 30px rgba(0,0,0,0.15); }
+.an-stat .sv {
+    font-size: 30px;
+    font-weight: 700;
+    color: #64748b;
+    line-height: 1;
+    margin-bottom: 5px;
+}
+.an-stat .sl {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+.an-stat.s-pink .sv  { color: #ff6ec4; }
+.an-stat.s-green .sv { color: #4ade80; }
+.an-stat.s-blue .sv  { color: #60a5fa; }
+
+/* ── Main grid ── */
+.an-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+.an-grid-full { grid-column: 1 / -1; }
+
+/* ── Glass card ── */
+.an-card {
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 24px 28px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.an-card:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(0,0,0,0.12); }
+.an-card-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.an-card-title::before {
+    content: '';
+    width: 4px; height: 16px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #ff6ec4, #7873f5);
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+/* ── Skill bars ── */
+.skill-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 13px;
+}
+.skill-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    width: 160px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: capitalize;
+}
+.skill-track {
+    flex: 1;
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.skill-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #7873f5, #ff6ec4);
+    transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+.skill-pct {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    width: 34px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* ── Chart wrapper ── */
+.an-chart-wrap {
+    position: relative;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Top skill spotlight ── */
+.an-spotlight {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    gap: 12px;
+}
+.spotlight-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #7873f5;
+    background: #eef2ff;
+    padding: 4px 14px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.spotlight-skill {
+    font-size: 38px;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    text-transform: capitalize;
+    background: linear-gradient(45deg, #7873f5, #ff6ec4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+    word-break: break-word;
+    padding: 0 10px;
+}
+.spotlight-sub {
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+}
+
+/* ── City legend ── */
+.city-legend {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+}
+.city-leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
+}
+.city-leg-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* ── Empty state ── */
+.an-empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+}
+
+/* ── Source note ── */
+.an-source {
+    text-align: center;
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 12px;
+}
+.an-source span {
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* responsive */
+@media(max-width:768px) {
+    .an-grid { grid-template-columns: 1fr; }
+    .an-stats { grid-template-columns: 1fr; }
+    .an-grid-full { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ NAVBAR ══════ -->
+<div class="up">
+    <ul>
+        <li><a href="{{ url_for('main') }}">Home</a></li>
+        <li><a href="{{ url_for('about') }}">About</a></li>
+        {% if session['role'] == 'recruiter' %}
+        <li><a href="/post">Post Job</a></li>
+        {% endif %}
+        {% if session['role'] == 'user' %}
+        <li><a href="/resume_checker">Resume Checker</a></li>
+        {% endif %}
+        <li><a href="{{ url_for('analytics') }}" style="color:#0399f7;">Analysis</a></li>
+        <li><a href="{{ url_for('learning') }}">Learning Dashboard</a></li>
+        {% if session['role'] == 'recruiter' %}
+        <li><a href="/hiring_hub">Hiring Hub</a></li>
+        {% endif %}
+        {% if session['role'] == 'user' %}
+        <li><a href="/my_applications">My Applications</a></li>
+        {% endif %}
+    </ul>
+    <div class="profile-container">
+        {% if current_user and current_user.profile_image %}
+        <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+            class="nav-profile-img"
+            onerror="this.onerror=null; this.src='/static/images/profile.jpeg';">
+        {% else %}
+        <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+            style="background-color:#4f46e5;">
+        {% endif %}
+        <div class="profile-card" id="profileCard">
+            <div class="card-header">
+                <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                    width="100" onerror="this.onerror=null; this.src='/static/images/profile.jpeg';">
+                <h4>{{ current_user.Full_Name }}</h4>
+                <p>{{ current_user.Email }}</p>
+            </div>
+            <div class="card-links">
+                <a href="/profile">My Profile</a>
+                <a href="/setting">Settings</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ MAIN CONTENT ══════ -->
+<div class="an-wrap">
+
+    <!-- Hero -->
+    <div class="an-hero">
+        <h1>📊 Job Analytics</h1>
+        <p>Real-time market insights pulled from live job listings across India</p>
+    </div>
+
+    <!-- Filter -->
+    <div class="an-filter">
+        <select id="jobSelect" class="an-select">
+            {% for job in job_titles %}
+            <option value="{{ job }}">{{ job }}</option>
+            {% endfor %}
+        </select>
+        <button class="an-btn" id="analyzeBtn" onclick="loadAnalytics()">🔍 Analyze</button>
+    </div>
+
+    <!-- Loader -->
+    <div class="an-loader" id="loader">
+        <div class="an-dots"><span></span><span></span><span></span></div>
+        Fetching live data…
+    </div>
+
+    <!-- Stat strip -->
+    <div class="an-stats" id="statStrip" style="display:none;">
+        <div class="an-stat s-blue">
+            <div class="sv" id="statJobs">—</div>
+            <div class="sl">Live Job Listings</div>
+        </div>
+        <div class="an-stat s-pink">
+            <div class="sv" id="statSkills">—</div>
+            <div class="sl">Unique Skills Found</div>
+        </div>
+        <div class="an-stat s-green">
+            <div class="sv" id="statCities">—</div>
+            <div class="sl">Cities Hiring</div>
+        </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="an-grid" id="mainGrid" style="display:none;">
+
+        <!-- Skills bar chart -->
+        <div class="an-card an-grid-full">
+            <div class="an-card-title">Most Required Skills</div>
+            <div id="skillsContainer"></div>
+        </div>
+
+        <!-- City pie chart -->
+        <div class="an-card">
+            <div class="an-card-title">Cities With Most Jobs</div>
+            <div class="an-chart-wrap">
+                <canvas id="cityChart"></canvas>
+            </div>
+            <div class="city-legend" id="cityLegend"></div>
+        </div>
+
+        <!-- Top skill spotlight -->
+        <div class="an-card">
+            <div class="an-card-title">Top In-Demand Skill</div>
+            <div class="an-spotlight">
+                <div class="spotlight-badge">🏆 Most Mentioned</div>
+                <div class="spotlight-skill" id="topSkill">—</div>
+                <div class="spotlight-sub" id="topSkillSub">Analyzing…</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Source note -->
+    <div class="an-source" id="sourceNote" style="display:none;">
+        📡 Data sourced from <span>Adzuna India</span> · Updates every session · Based on <span id="jobCount">—</span> real job listings
+    </div>
+
+</div>
+
+<!-- ══════ CHATBOT ══════ -->
+<div id="chatbot-container">
+    <div class="chat-header">
+        <span>🤖 Assistant</span>
+        <button id="closeChat">✖</button>
+    </div>
+    <div class="chat-body" id="chatBody">
+        <div class="bot-message">Hi 👋 How can I help you?</div>
+    </div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="Type a message…" />
+        <button id="sendBtn" type="button">Send</button>
+    </div>
+</div>
+
+<!-- ══════ SCRIPTS ══════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let cityChart = null;
+
+const CHART_COLORS = [
+    '#7873f5','#ff6ec4','#4ade80','#60a5fa','#fbbf24',
+    '#f87171','#34d399','#a78bfa','#fb923c','#38bdf8',
+    '#e879f9','#2dd4bf','#facc15','#94a3b8','#f472b6'
+];
+
+window.onload = () => loadAnalytics();
+
+function loadAnalytics() {
+    const loader   = document.getElementById('loader');
+    const btn      = document.getElementById('analyzeBtn');
+    const strip    = document.getElementById('statStrip');
+    const grid     = document.getElementById('mainGrid');
+    const srcNote  = document.getElementById('sourceNote');
+
+    loader.classList.add('show');
+    btn.disabled   = true;
+    btn.innerText  = '⏳ Loading…';
+    strip.style.display = 'none';
+    grid.style.display  = 'none';
+    srcNote.style.display = 'none';
+
+    const job = document.getElementById('jobSelect').value;
+
+    fetch(`/api/analytics?job=${encodeURIComponent(job)}`)
+        .then(r => r.json())
+        .then(data => {
+            renderStats(data);
+            renderSkills(data.skills);
+            renderCities(data.cities);
+            renderTopSkill(data.top_skill, data.skills, data.total_jobs);
+
+            strip.style.display  = 'grid';
+            grid.style.display   = 'grid';
+            srcNote.style.display = 'block';
+            document.getElementById('jobCount').textContent = data.total_jobs || '—';
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Failed to load analytics. Please try again.');
+        })
+        .finally(() => {
+            loader.classList.remove('show');
+            btn.disabled  = false;
+            btn.innerText = '🔍 Analyze';
+        });
+}
+
+function renderStats(data) {
+    const jobCount   = data.total_jobs || 0;
+    const skillCount = Object.keys(data.skills || {}).length;
+    const cityCount  = Object.keys(data.cities || {}).length;
+    document.getElementById('statJobs').textContent   = jobCount;
+    document.getElementById('statSkills').textContent = skillCount;
+    document.getElementById('statCities').textContent = cityCount;
+}
+
+function renderSkills(skills) {
+    const container = document.getElementById('skillsContainer');
+    container.innerHTML = '';
+
+    if (!skills || Object.keys(skills).length === 0) {
+        container.innerHTML = '<div class="an-empty">No skill data found for this role.</div>';
+        return;
+    }
+
+    const total = Object.values(skills).reduce((a, b) => a + b, 0);
+    // Sort by count desc
+    const sorted = Object.entries(skills).sort((a, b) => b[1] - a[1]);
+
+    sorted.forEach(([skill, count], i) => {
+        const pct = Math.round((count / total) * 100);
+        const hue = (i * 23) % 360;
+
+        const row = document.createElement('div');
+        row.className = 'skill-row';
+        row.innerHTML = `
+            <div class="skill-name" title="${skill}">${skill}</div>
+            <div class="skill-track">
+                <div class="skill-fill" style="width:0%;background:linear-gradient(90deg,hsl(${hue},70%,60%),hsl(${(hue+40)%360},80%,65%));"
+                     data-width="${pct}"></div>
+            </div>
+            <div class="skill-pct">${pct}%</div>
+        `;
+        container.appendChild(row);
+    });
+
+    // Animate bars after render
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.skill-fill').forEach(el => {
+            el.style.width = el.dataset.width + '%';
+        });
+    });
+}
+
+function renderCities(cities) {
+    if (cityChart) { cityChart.destroy(); cityChart = null; }
+
+    const legend = document.getElementById('cityLegend');
+    legend.innerHTML = '';
+
+    if (!cities || Object.keys(cities).length === 0) return;
+
+    const labels = Object.keys(cities);
+    const values = Object.values(cities);
+    const colors = labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+
+    cityChart = new Chart(document.getElementById('cityChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.label}: ${ctx.parsed} jobs`
+                    }
+                }
+            }
+        }
+    });
+
+    // Custom legend
+    labels.forEach((city, i) => {
+        const item = document.createElement('div');
+        item.className = 'city-leg-item';
+        item.innerHTML = `
+            <div class="city-leg-dot" style="background:${colors[i]};"></div>
+            <span>${city}</span>
+        `;
+        legend.appendChild(item);
+    });
+}
+
+function renderTopSkill(topSkill, skills, totalJobs) {
+    const el  = document.getElementById('topSkill');
+    const sub = document.getElementById('topSkillSub');
+
+    if (!topSkill || topSkill === 'N/A') {
+        el.textContent  = 'N/A';
+        sub.textContent = 'No data available';
+        return;
+    }
+
+    el.textContent = topSkill;
+
+    if (skills && skills[topSkill] && totalJobs) {
+        const pct = Math.round((skills[topSkill] / Object.values(skills).reduce((a,b)=>a+b,0)) * 100);
+        sub.textContent = `Mentioned in ~${pct}% of ${totalJobs} job listings`;
+    } else {
+        sub.textContent = 'Most in-demand skill for this role';
+    }
+}
+
+// Profile card toggle
+document.addEventListener('DOMContentLoaded', () => {
+    const btn  = document.getElementById('profileBtn');
+    const card = document.getElementById('profileCard');
+    btn.addEventListener('click', e => { e.stopPropagation(); card.classList.toggle('show'); });
+    document.addEventListener('click', () => card.classList.remove('show'));
+
+    document.getElementById('closeChat').addEventListener('click', () => {
+        document.getElementById('chatbot-container').classList.remove('active');
+    });
+});
+</script>
+<script>window.process = undefined;</script>
+<script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
+</html>

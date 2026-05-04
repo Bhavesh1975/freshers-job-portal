@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+
+    <style>
+        /* Fix: form input { color: white } in style.css bleeds into apply form */
+        .job-apply-form input,
+        .job-apply-form select,
+        .job-apply-form input:focus,
+        .job-apply-form select:focus {
+            color: #111 !important;
+            background: #fff !important;
+            -webkit-text-fill-color: #111 !important;
+        }
+
+        /* Fix autofill — browser injects white bg but text becomes invisible */
+        .job-apply-form input:-webkit-autofill,
+        .job-apply-form input:-webkit-autofill:hover,
+        .job-apply-form input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #111 !important;
+            box-shadow: 0 0 0px 1000px #fff inset !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        /* Placeholder stays muted grey */
+        .job-apply-form input::placeholder {
+            color: #9ca3af !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="up">
+        <ul>
+            <li><a href="{{url_for('main')}}" style="color: #0399f7;">Home</a></li>
+            <li><a href="{{url_for('about')}}">About</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{current_user.Full_Name}}</h4>
+                    <p>{{current_user.Email}}</p>
+                </div>
+
+                <div class="card-links">
+                    <a href="\profile">My Profile</a>
+                    <a href="\logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="job-container">
+        <div class="job-details">
+
+            <h1 class="job-title">{{ job.job_title }}</h1>
+
+            <div class="job-info">
+                <p><strong>Company:</strong> {{ job.company }}</p>
+                <p><strong>Industry:</strong> {{ job.industry }}</p>
+                <p><strong>City:</strong> {{ job.city }}</p>
+                <p><strong>Experience:</strong> {{ job.experience }}</p>
+                <p><strong>Employment:</strong> {{ job.employment }}</p>
+                <p><strong>Work Mode:</strong> {{ job.work_mode }}</p>
+                <p><strong>Company Email:</strong> {{ job.company_email }}</p>
+            </div>
+
+            <hr>
+
+            <h3>Job Description</h3>
+
+            <p class="job-description">
+                {{ job.description | replace('\n','<br>') | safe }}
+            </p>
+
+        </div>
+        <div class="apply-form">
+
+            <h2 class="form-heading">Apply for {{ job.job_title }}</h2>
+            <form class="job-apply-form" method="post" enctype="multipart/form-data">
+
+                <h3 class="form-section">Personal Information</h3>
+
+                <div class="form-row">
+                    <input type="text" name="name" value="{{user.Full_Name}}" readonly>
+                    <input type="email" name="email" value="{{user.email}}" readonly>
+                </div>
+
+                <div class="form-row">
+                    <input type="tel" name="phone" value="{{user.mobile}}" readonly>
+                    <input type="text" name="city" placeholder="Current City">
+                </div>
+
+                <div class="form-row">
+                    <input type="text" name="age" placeholder="Age">
+                    <input type="text" name="qualification" placeholder="Highest Qualification">
+                </div>
+
+
+                <h3 class="form-section">Professional Details</h3>
+
+                <div class="form-row">
+                    <input type="number" name="experience" placeholder="Years of Experience">
+                    <input type="text" name="current_company" placeholder="Current Company">
+                </div>
+
+                <div class="form-row">
+                    <input type="number" name="expected_salary" placeholder="Expected Salary">
+                    <select name="notice_period">
+                        <option value="">Notice Period</option>
+                        <option>Immediate</option>
+                        <option>15 Days</option>
+                        <option>1 Month</option>
+                        <option>2 Months</option>
+                    </select>
+                </div>
+
+
+                <h3 class="form-section">Profile Links</h3>
+
+                <div class="form-row">
+                    <input type="url" name="linkedin" value="{{ user.linkedin or '' }}" placeholder="LinkedIn Profile">
+                    <input type="url" name="portfolio" placeholder="Portfolio Website">
+                </div>
+
+
+                <h3 class="form-section">Additional Information</h3>
+
+                <div class="form-row">
+                    <select name="relocate">
+                        <option value="">Willing to Relocate?</option>
+                        <option>Yes</option>
+                        <option>No</option>
+                    </select>
+
+                    <div class="resume-container">
+                        <input type="file" name="resume" id="resume" class="resume-upload">
+                        <span id="resume-name">No file chosen</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="apply-btn">Submit Application</button>
+
+            </form>
+        </div>
+    </div>
+
+    <div id="chatbot-container">
+
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button> <!-- ✅ ADD THIS -->
+        </div>
+
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button> <!-- ✅ FIX -->
+        </div>
+
+    </div>
+
+    <script>
+        document.getElementById("resume").addEventListener("change", function () {
+            const fileName = this.files.length ? this.files[0].name : "No file chosen";
+            document.getElementById("resume-name").textContent = fileName;
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+        });
+    </script>
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+
+
+
+</body>

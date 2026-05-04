@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/examples/jsm/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Freshers Job Portal</title>
+    <link rel="icon" href="{{url_for('static',filename='images/logo.png')}}">
+</head>
+
+<body>
+    <div class="up">
+        <ul>
+            <li><a href="{{url_for('main')}}">Home</a></li>
+            <li><a href="{{url_for('about')}}" style="color: #0399f7;">About</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/post">Post Job</a></li>
+            {% endif %}
+
+            {% if session['role'] == 'user' %}
+            <li><a href="/resume_checker">Resume Checker</a></li>
+            {% endif %}
+            <li><a href="{{url_for('analytics')}}">Analysis</a></li>
+            <li><a href="{{url_for('learning')}}">Learning Dashboard</a></li>
+            {% if session['role'] == 'recruiter' %}
+            <li><a href="/hiring_hub">Hiring Hub</a></li>
+            {% endif %}
+            {% if session['role'] == 'user' %}
+            <li><a href="/my_applications">My Applications</a></li>
+            {% endif %}
+        </ul>
+
+        <div id="sidebar" class="sidebar">
+            <div class="search-container">
+                <form method="GET" action="{{ url_for('main') }}">
+                    <h2>Filters</h2>
+                    <select name="job" class="search-input">
+                        <option value="">All Jobs</option>
+                        {% for j in job_titles %}
+                        <option value="{{ j.job_title }}" {% if job==j.job_title %}selected{% endif %}>
+                            {{ j.job_title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="city" class="search-input">
+                        <option value="">All Cities</option>
+                        {% for c in cities %}
+                        <option value="{{ c.city }}" {% if city==c.city %}selected{% endif %}>
+                            {{ c.city }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <select name="mode" class="search-input">
+                        <option value="">All Work Modes</option>
+                        <option value="Remote" {% if mode=="Remote" %}selected{% endif %}>Remote</option>
+                        <option value="On-site" {% if mode=="On-site" %}selected{% endif %}>On-site</option>
+                        <option value="Hybrid" {% if mode=="Hybrid" %}selected{% endif %}>Hybrid</option>
+                    </select>
+
+                    <div class="button-group">
+                        <button type="submit" class="filter-btn">Search</button>
+
+                        <button type="reset" class="filter-btn">Reset</button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="profile-container">
+            {% if current_user and current_user.profile_image %}
+            <img src="{{ url_for('static', filename='profile_pics/' + current_user.profile_image) }}" id="profileBtn"
+                class="nav-profile-img"
+                onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+            {% else %}
+            <img src="{{ url_for('static', filename='images/profile.jpeg') }}" id="profileBtn" class="nav-profile-img"
+                style="background-color: #4f46e5;">
+            {% endif %}
+
+            <div class="profile-card" id="profileCard">
+                <div class="card-header">
+                    <img src="{{ url_for('static', filename='profile_pics/' + (current_user.profile_image if current_user.profile_image else 'default.png')) }}"
+                        width="150"
+                        onerror="this.onerror=null; this.src='/static/images/profile.jpeg'; this.style.backgroundColor='#4f46e5';">
+                    <h4>{{current_user.Full_Name}}</h4>
+                    <p>{{current_user.Email}}</p>
+                </div>
+
+                <div class="card-links">
+                    <a href="\profile">My Profile</a>
+                    <a href="\logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ SCRIPT AT BOTTOM -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const profileBtn = document.getElementById("profileBtn");
+            const profileCard = document.getElementById("profileCard");
+
+            profileBtn.addEventListener("click", function (e) {
+                e.stopPropagation();
+                profileCard.classList.toggle("show");
+            });
+
+            document.addEventListener("click", function () {
+                profileCard.classList.remove("show");
+            });
+        });
+
+        function togglesidebar() {
+            document.getElementById("sidebar").classList.toggle("active")
+        }
+    </script>
+    <div class="about-section">
+        <h1>About Us</h1>
+        <p>Welcome to <strong>Job Portal</strong> – your gateway to exciting career opportunities!</p>
+        <p>We bridge the gap between job seekers and employers, ensuring that talent finds the right platform to
+            shine
+            while organizations connect with the best candidates. Whether you’re looking for your first job, a
+            career
+            switch, or top talent for your company, Job Portal is here to make the process smooth and efficient.
+        </p>
+
+
+        <h2>Our Mission</h2>
+        <p>To simplify the hiring process by providing a platform that ensures transparency, efficiency, and trust.
+        </p>
+        <p>We aim to provide a platform that ensures transparency, efficiency, and trust in every step of the hiring
+            process. We believe in empowering candidates to showcase their skills while enabling companies to find
+            the
+            perfect match for their needs.
+        </p>
+
+        <h2>Our Vision</h2>
+        <p>We envision a world where finding a job is no longer stressful but rather an empowering experience. By
+            embracing innovation and technology, we strive to create a platform where:</p>
+        <ul>
+            <li>✔ Every candidate finds opportunities that match their skills.</li><br>
+            <li>✔ Every employer hires the right talent, faster.</li><br>
+            <li>✔ Remote, hybrid, and onsite work options are easily accessible to all.</li>
+        </ul>
+
+        <h2>Why Choose Us?</h2>
+        <ul>
+            <li>✔ Wide range of job categories across industries</li><br>
+            <li>✔ Opportunities for remote, hybrid, and onsite work</li><br>
+            <li>✔ Easy-to-use interface for both candidates and recruiters</li><br>
+            <li>✔ Secure, reliable, and transparent platform</li><br>
+            <li>✔ AI-driven matching for faster and smarter hiring</li><br>
+            <li>✔ Dedicated support for job seekers and recruiters</li>
+        </ul>
+
+        <h2>Our Values</h2>
+        <ul>
+            <li>✔ Integrity: We ensure fairness in every opportunity.</li><br>
+            <li>✔ Innovation: Leveraging technology to enhance hiring.</li><br>
+            <li>✔ Accessibility: Opportunities for everyone, everywhere.</li><br>
+            <li>✔ Trust: Building long-term relationships with users.</li>
+        </ul>
+
+    </div>
+    <div id="chatbot-container">
+
+        <div class="chat-header">
+            <span>🤖 Assistant</span>
+            <button id="closeChat">✖</button> <!-- ✅ ADD THIS -->
+        </div>
+
+        <div class="chat-body" id="chatBody">
+            <div class="bot-message">Hi 👋 How can I help you?</div>
+        </div>
+
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Type a message..." />
+            <button id="sendBtn" type="button">Send</button> <!-- ✅ FIX -->
+        </div>
+
+    </div>
+    <script>
+        window.process = undefined;
+    </script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
